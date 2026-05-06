@@ -43,6 +43,4 @@ public class Transaction {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
     
-    @Column(nullable = false)
-    private BigDecimal fee = BigDecimal.ZERO; // 0,5% prévu en V1
 }

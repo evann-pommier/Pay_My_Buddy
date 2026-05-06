@@ -1,6 +1,6 @@
 package com.openclassrooms.Pay_My_Buddy.repository;
 
-import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,16 +14,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     /**
      * Récupère toutes les transactions envoyées par un utilisateur.
      */
-    List<Transaction> findBySender(User sender);
+    Optional<Transaction> findBySender(User sender);
 
     /**
      * Récupère toutes les transactions reçues par un utilisateur.
      */
-    List<Transaction> findByReceiver(User receiver);
+    Optional<Transaction> findByReceiver(User receiver);
 
     /**
      * Récupère toutes les transactions d'un utilisateur
      * (envoyées ET reçues), triées par date décroissante.
      */
-    List<Transaction> findBySenderOrReceiverOrderByCreatedAtDesc(User sender, User receiver);
+    Optional<Transaction> findBySenderOrReceiverOrderByCreatedAtDesc(User sender, User receiver);
 }
