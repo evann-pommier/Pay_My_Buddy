@@ -1,7 +1,7 @@
 package com.openclassrooms.Pay_My_Buddy.service;
 
 import java.math.BigDecimal;
-import java.util.Optional;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,7 +70,7 @@ public class TransactionService {
     /**
      * Récupère toutes les transactions d'un utilisateur.
      */
-    public Optional<Transaction> getTransactions(User user) {
+    public List<Transaction> getTransactions(User user) {
         return transactionRepository
             .findBySenderOrReceiverOrderByCreatedAtDesc(user, user);
     }
