@@ -7,8 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.openclassrooms.Pay_My_Buddy.dto.AddConnectionDTO;
+import com.openclassrooms.Pay_My_Buddy.dto.TransactionDTO;
 import com.openclassrooms.Pay_My_Buddy.dto.TransferDTO;
+import com.openclassrooms.Pay_My_Buddy.dto.UserDTO;
 import com.openclassrooms.Pay_My_Buddy.exception.InsufficientBalanceException;
+import com.openclassrooms.Pay_My_Buddy.mapper.Mapper;
 import com.openclassrooms.Pay_My_Buddy.model.Transaction;
 import com.openclassrooms.Pay_My_Buddy.model.User;
 import com.openclassrooms.Pay_My_Buddy.service.TransactionService;
@@ -34,14 +37,14 @@ public class TransferController {
      * POST /api/transfer
      */
     @PostMapping("/transfer")
-    public ResponseEntity<Transaction> transfer(
+    public ResponseEntity<TransactionDTO> transfer(
             Principal principal,
             @Valid @RequestBody TransferDTO dto) {
         try {
             User sender = userService.findByEmail(principal.getName());
             Transaction transaction = transactionService.transfer(
                 sender, dto.receiverEmail(), dto.amount(), dto.description());
-            return ResponseEntity.ok(transaction);
+            return ResponseEntity.ok(Mapper.toTransactionDTO(transaction));
         } catch (InsufficientBalanceException | IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -52,9 +55,14 @@ public class TransferController {
      * GET /api/connections
      */
     @GetMapping("/connections")
-    public ResponseEntity<List<User>> connections(Principal principal) {
+    public ResponseEntity<List<UserDTO>> connections(Principal principal) {
         User user = userService.findByEmail(principal.getName());
-        return ResponseEntity.ok(user.getConnections());
+        return ResponseEntity.ok(
+                user.getConnections()
+                    .stream()
+                    .map(Mapper::toUserDTO)
+                    .toList()
+            );
     }
 
     /**

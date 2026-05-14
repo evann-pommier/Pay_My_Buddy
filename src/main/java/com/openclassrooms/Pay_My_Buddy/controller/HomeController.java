@@ -6,7 +6,9 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.openclassrooms.Pay_My_Buddy.model.Transaction;
+import com.openclassrooms.Pay_My_Buddy.dto.TransactionDTO;
+import com.openclassrooms.Pay_My_Buddy.dto.UserDTO;
+import com.openclassrooms.Pay_My_Buddy.mapper.Mapper;
 import com.openclassrooms.Pay_My_Buddy.model.User;
 import com.openclassrooms.Pay_My_Buddy.service.TransactionService;
 import com.openclassrooms.Pay_My_Buddy.service.UserService;
@@ -29,9 +31,9 @@ public class HomeController {
      * GET /api/me
      */
     @GetMapping("/me")
-    public ResponseEntity<User> me(Principal principal) {
+    public ResponseEntity<UserDTO> me(Principal principal) {
         User user = userService.findByEmail(principal.getName());
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(Mapper.toUserDTO(user));
     }
 
     /**
@@ -39,8 +41,13 @@ public class HomeController {
      * GET /api/transactions
      */
     @GetMapping("/transactions")
-    public ResponseEntity<List<Transaction>> transactions(Principal principal) {
+    public ResponseEntity<List<TransactionDTO>> transactions(Principal principal) {
         User user = userService.findByEmail(principal.getName());
-        return ResponseEntity.ok(transactionService.getTransactions(user));
+        return ResponseEntity.ok(
+                transactionService.getTransactions(user)
+                    .stream()
+                    .map(Mapper::toTransactionDTO)
+                    .toList()
+            );
     }
 }
