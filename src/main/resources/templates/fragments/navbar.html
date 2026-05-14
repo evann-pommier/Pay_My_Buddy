@@ -15,6 +15,12 @@
 
     <div style="display:flex; align-items:center; gap:24px; font-size:0.9rem;">
 
+		<a th:href="@{/home}"
+		   th:style="${active == 'home'} ? 'color:#2979FF; font-weight:600; text-decoration:none;'
+				                         : 'color:#333; text-decoration:none;'">
+			Home
+		</a>
+				
         <a th:href="@{/transfer}"
            th:style="${active == 'transfer'} ? 'color:#2979FF; font-weight:600; text-decoration:none;'
                                              : 'color:#333; text-decoration:none;'">
@@ -32,6 +38,8 @@
                                                    : 'color:#333; text-decoration:none;'">
             Ajouter relation
         </a>
+		
+		
 
         <form th:action="@{/logout}" method="post" style="margin:0;">
             <button type="submit"

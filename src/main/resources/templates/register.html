@@ -3,152 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Transférer - Pay My Buddy</title>
+    <title>Inscription - Pay My Buddy</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <style>
-        body { background: #f5f5f5; font-family: sans-serif; }
-        .btn-pay {
-            background: #2979FF;
+        body { background: #f5f5f5; }
+        .logo-btn {
+            background: #F5A623;
             color: #fff;
             border: none;
             border-radius: 6px;
             padding: 6px 20px;
-            font-size: 0.9rem;
-            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            display: inline-block;
         }
-        .btn-pay:hover { background: #1565C0; }
-        .form-control, .form-select { font-size: 0.9rem; border-radius: 4px; }
-        table th { font-weight: 600; font-size: 0.85rem; color: #555; }
-        table td { font-size: 0.9rem; }
+        .btn-register {
+            background: #2979FF;
+            color: #fff;
+            border: none;
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        .btn-register:hover { background: #1565C0; color: #fff; }
+        .form-control { border-radius: 4px; font-size: 0.9rem; }
+        .card { border-radius: 8px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="card shadow-sm p-4" style="width: 100%; max-width: 340px;">
 
-<div th:replace="~{fragments/navbar :: navbar('transfer')}"></div>
-
-<div class="container mt-4" style="max-width: 700px;">
-
-    <div id="alert" class="d-none mb-3"></div>
-
-    <!-- Formulaire de virement -->
-    <div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
-        <select id="receiverEmail" class="form-select" style="max-width:220px;"
-                aria-label="Sélectionner une relation">
-            <option value="">Sélectionner une relation</option>
-        </select>
-
-        <input type="text" id="description" class="form-control" style="max-width:200px;"
-               placeholder="Description" aria-label="Description du virement"/>
-
-        <div class="d-flex align-items-center border rounded" style="max-width:100px;">
-            <input type="number" id="amount" class="form-control border-0"
-                   step="0.01" min="0.01" placeholder="0€"
-                   aria-label="Montant du virement"/>
+        <div class="text-center mb-4">
+            <span class="logo-btn">Pay My Buddy</span>
         </div>
 
-        <button onclick="sendTransfer()" class="btn-pay">Payer</button>
-    </div>
+        <div id="alert" class="d-none mb-3"></div>
 
-    <!-- Tableau des transactions -->
-    <div>
-        <h6 class="mb-2" style="font-weight:600;">Mes Transactions</h6>
-        <table class="table table-borderless" aria-label="Historique des transactions">
-            <thead style="border-bottom: 1px solid #ddd;">
-                <tr>
-                    <th scope="col">Relations</th>
-                    <th scope="col">Description</th>
-                    <th scope="col" class="text-end">Montant</th>
-                </tr>
-            </thead>
-            <tbody id="transactions">
-                <tr>
-                    <td colspan="3" class="text-center text-muted">Chargement...</td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="mb-3">
+            <input type="text" id="username" class="form-control"
+                   placeholder="Username" required
+                   aria-label="Nom d'utilisateur"/>
+        </div>
+        <div class="mb-3">
+            <input type="email" id="email" class="form-control"
+                   placeholder="Mail" required
+                   aria-label="Adresse email"/>
+        </div>
+        <div class="mb-3">
+            <input type="password" id="password" class="form-control"
+                   placeholder="Mot de passe" required minlength="8"
+                   aria-label="Mot de passe"/>
+        </div>
+        <button type="button" onclick="register()" class="btn-register">
+            S'inscrire
+        </button>
+
+        <p class="text-center mt-3 small mb-0">
+            Déjà un compte ?
+            <a th:href="@{/login}">Se connecter</a>
+        </p>
     </div>
 </div>
 
 <script>
-let currentUserEmail = null;
-
-async function loadData() {
-    const [meRes, txRes, connRes] = await Promise.all([
-        fetch('/api/me'),
-        fetch('/api/transactions'),
-        fetch('/api/connections')
-    ]);
-
-    if (!meRes.ok) { window.location.href = '/login'; return; }
-
-    const me = await meRes.json();
-    currentUserEmail = me.email;
-
-    const connections = connRes.ok ? await connRes.json() : [];
-    const select = document.getElementById('receiverEmail');
-    if (connections.length === 0) {
-        select.innerHTML = '<option value="">Aucune relation ajoutée</option>';
-    } else {
-        select.innerHTML = '<option value="">Sélectionner une relation</option>'
-            + connections.map(c =>
-                `<option value="${c.email}">${c.username} (${c.email})</option>`
-            ).join('');
-    }
-
-    const transactions = txRes.ok ? await txRes.json() : [];
-    const tbody = document.getElementById('transactions');
-    if (transactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-muted">Aucune transaction</td></tr>';
-    } else {
-        tbody.innerHTML = transactions.map(tx => {
-            const isSender = tx.senderEmail === currentUserEmail;
-            const relation = isSender ? tx.receiverEmail : tx.senderEmail;
-            const sign = isSender ? '-' : '+';
-            return `
-                <tr style="border-bottom: 1px solid #f0f0f0;">
-                    <td>${relation}</td>
-                    <td>${tx.description ?? '-'}</td>
-                    <td class="text-end">${sign}${tx.amount}€</td>
-                </tr>
-            `;
-        }).join('');
-    }
-}
-
-async function sendTransfer() {
-    const receiverEmail = document.getElementById('receiverEmail').value;
-    const amount = document.getElementById('amount').value;
-    const description = document.getElementById('description').value;
+async function register() {
     const alertDiv = document.getElementById('alert');
-
-    if (!receiverEmail) {
-        alertDiv.className = 'alert alert-warning';
-        alertDiv.textContent = 'Veuillez sélectionner un destinataire.';
-        return;
-    }
-
-    const res = await fetch('/api/transfer', {
+    const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             [getCsrfHeader()]: getCsrf()
         },
-        body: JSON.stringify({ receiverEmail, amount: parseFloat(amount), description })
+        body: JSON.stringify({
+            username: document.getElementById('username').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+        })
     });
 
-    alertDiv.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
+    alertDiv.classList.remove('d-none', 'alert-success', 'alert-danger');
     if (res.ok) {
-        alertDiv.className = 'alert alert-success';
-        alertDiv.textContent = 'Virement effectué avec succès !';
-        document.getElementById('amount').value = '';
-        document.getElementById('description').value = '';
-        loadData();
+        alertDiv.className = 'alert alert-success py-2 small';
+        alertDiv.textContent = 'Compte créé ! Redirection...';
+        setTimeout(() => window.location.href = '/login?registered', 1500);
     } else {
         const error = await res.json().catch(() => ({}));
-        alertDiv.className = 'alert alert-danger';
-        alertDiv.textContent = error.message ?? 'Une erreur est survenue.';
+        alertDiv.className = 'alert alert-danger py-2 small';
+        alertDiv.textContent = error.message ?? 'Cet email est déjà utilisé.';
     }
 }
 
@@ -158,8 +103,6 @@ function getCsrf() {
 function getCsrfHeader() {
     return document.querySelector('meta[name="_csrf_header"]').content;
 }
-
-loadData();
 </script>
 </body>
 </html>

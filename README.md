@@ -1,7 +1,7 @@
 # Pay My Buddy
 
-Application web de transfert d'argent entre amis.  
-Développée avec Spring Boot 3, Spring Security, JPA/Hibernate et MySQL.
+Application web de transfert d'argent entre amis.
+Développée avec Spring Boot 3.5, Spring Security, JPA/Hibernate et MySQL.
 
 ---
 
@@ -40,7 +40,7 @@ erDiagram
 ## Stack technique
 
 - Java 21
-- Spring Boot 3.4
+- Spring Boot 3.5
 - Spring Security (BCrypt)
 - Spring Data JPA / Hibernate
 - MySQL 8
@@ -104,14 +104,58 @@ src/
 │   ├── java/com/openclassrooms/Pay_My_Buddy/
 │   │   ├── config/
 │   │   │   └── SecurityConfig.java
+│   │   ├── controller/
+│   │   │   ├── web/
+│   │   │   │   └── PageController.java
+│   │   │   ├── AuthController.java
+│   │   │   ├── HomeController.java
+│   │   │   └── TransferController.java
+│   │   ├── dto/
+│   │   │   ├── AddConnectionDTO.java
+│   │   │   ├── RegisterDTO.java
+│   │   │   ├── TransactionResponseDTO.java
+│   │   │   ├── TransferDTO.java
+│   │   │   └── UserResponseDTO.java
+│   │   ├── exception/
+│   │   │   ├── GlobalExceptionHandler.java
+│   │   │   ├── ErrorResponse.java
+│   │   │   └── InsufficientBalanceException.java
+│   │   ├── mapper/
+│   │   │   └── DtoMapper.java
+│   │   ├── model/
+│   │   │   ├── Transaction.java
+│   │   │   └── User.java
+│   │   ├── repository/
+│   │   │   ├── TransactionRepository.java
+│   │   │   └── UserRepository.java
+│   │   ├── service/
+│   │   │   ├── CustomUserDetailsService.java
+│   │   │   ├── TransactionService.java
+│   │   │   └── UserService.java
 │   │   └── PayMyBuddyApplication.java
 │   └── resources/
+│       ├── templates/
+│       │   ├── fragments/
+│       │   │   └── navbar.html
+│       │   ├── add-connection.html
+│       │   ├── home.html
+│       │   ├── login.html
+│       │   ├── profile.html
+│       │   ├── register.html
+│       │   └── transfer.html
 │       ├── schema.sql
 │       ├── data.sql
 │       └── application.properties
 └── test/
     └── java/com/openclassrooms/Pay_My_Buddy/
-        └── PayMyBuddyApplicationTests.java
+        ├── controller/
+        │   ├── AuthControllerTest.java
+        │   ├── HomeControllerTest.java
+        │   ├── PageControllerTest.java
+        │   └── TransferControllerTest.java
+        └── service/
+            ├── TransactionServiceTest.java
+            └── UserServiceTest.java
 ```
 
 ---
@@ -140,16 +184,12 @@ Un fichier `data.sql` est disponible dans `src/main/resources/` avec des utilisa
 
 Tous les comptes de test ont le mot de passe : **`password123`**
 
-- **Alice Martin** — alice@email.com — 500,00€
-- **Bob Dupont** — bob@email.com — 250,00€
-- **Clara Petit** — clara@email.com — 100,00€
-- **David Moreau** — david@email.com — 750,00€
-
-Pour charger les données de test, ajoutez dans `application.properties` :
-
-```properties
-spring.sql.init.data-locations=classpath:data.sql
-```
+| Utilisateur | Email | Solde |
+|---|---|---|
+| Alice Martin | alice@email.com | 500,00 € |
+| Bob Dupont | bob@email.com | 250,00 € |
+| Clara Petit | clara@email.com | 100,00 € |
+| David Moreau | david@email.com | 750,00 € |
 
 ---
 
@@ -157,4 +197,20 @@ spring.sql.init.data-locations=classpath:data.sql
 
 - Les mots de passe sont hashés avec **BCrypt**
 - Les identifiants de base de données sont injectés via des **variables d'environnement**
+- La protection **CSRF** est activée sur tous les formulaires
+- Les routes sont sécurisées via **Spring Security**
 - Le fichier `application.properties` est exclu du dépôt Git (`.gitignore`)
+
+---
+
+## Tests
+
+Lancer les tests avec le rapport de couverture JaCoCo :
+
+```bash
+mvn test
+```
+
+Le rapport HTML est généré dans `target/site/jacoco/index.html`.
+
+Le seuil minimum de couverture est fixé à **80%**.
