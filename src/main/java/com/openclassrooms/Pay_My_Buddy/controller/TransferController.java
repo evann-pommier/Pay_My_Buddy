@@ -10,7 +10,6 @@ import com.openclassrooms.Pay_My_Buddy.dto.AddConnectionDTO;
 import com.openclassrooms.Pay_My_Buddy.dto.TransactionDTO;
 import com.openclassrooms.Pay_My_Buddy.dto.TransferDTO;
 import com.openclassrooms.Pay_My_Buddy.dto.UserDTO;
-import com.openclassrooms.Pay_My_Buddy.exception.InsufficientBalanceException;
 import com.openclassrooms.Pay_My_Buddy.mapper.Mapper;
 import com.openclassrooms.Pay_My_Buddy.model.Transaction;
 import com.openclassrooms.Pay_My_Buddy.model.User;
@@ -26,8 +25,7 @@ public class TransferController {
     private final UserService userService;
     private final TransactionService transactionService;
 
-    public TransferController(UserService userService,
-                              TransactionService transactionService) {
+    public TransferController(UserService userService, TransactionService transactionService) {
         this.userService = userService;
         this.transactionService = transactionService;
     }
@@ -37,17 +35,10 @@ public class TransferController {
      * POST /api/transfer
      */
     @PostMapping("/transfer")
-    public ResponseEntity<TransactionDTO> transfer(
-            Principal principal,
-            @Valid @RequestBody TransferDTO dto) {
-        try {
-            User sender = userService.findByEmail(principal.getName());
-            Transaction transaction = transactionService.transfer(
-                sender, dto.receiverEmail(), dto.amount(), dto.description());
-            return ResponseEntity.ok(Mapper.toTransactionDTO(transaction));
-        } catch (InsufficientBalanceException | IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<TransactionDTO> transfer(Principal principal, @Valid @RequestBody TransferDTO dto) {
+        User sender = userService.findByEmailWithConnections(principal.getName());
+        Transaction transaction = transactionService.transfer(sender, dto.receiverEmail(), dto.amount(), dto.description());
+        return ResponseEntity.ok(Mapper.toTransactionDTO(transaction));
     }
 
     /**
@@ -56,13 +47,12 @@ public class TransferController {
      */
     @GetMapping("/connections")
     public ResponseEntity<List<UserDTO>> connections(Principal principal) {
-        User user = userService.findByEmail(principal.getName());
+        User user = userService.findByEmailWithConnections(principal.getName());
         return ResponseEntity.ok(
-                user.getConnections()
-                    .stream()
-                    .map(Mapper::toUserDTO)
-                    .toList()
-            );
+            user.getConnections()
+                .stream()
+                .map(Mapper::toUserDTO)
+                .toList());
     }
 
     /**
@@ -70,15 +60,9 @@ public class TransferController {
      * POST /api/connections
      */
     @PostMapping("/connections")
-    public ResponseEntity<Void> addConnection(
-            Principal principal,
-            @Valid @RequestBody AddConnectionDTO dto) {
-        try {
-            User user = userService.findByEmail(principal.getName());
-            userService.addConnection(user, dto.friendEmail());
-            return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<Void> addConnection(Principal principal, @Valid @RequestBody AddConnectionDTO dto) {
+        User user = userService.findByEmailWithConnections(principal.getName());
+        userService.addConnection(user, dto.friendEmail());
+        return ResponseEntity.ok().build();
     }
 }

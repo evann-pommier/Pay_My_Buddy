@@ -52,14 +52,21 @@ public class UserService {
         if (user.getEmail().equals(friendEmail)) {
             throw new IllegalArgumentException("Vous ne pouvez pas vous ajouter vous-même.");
         }
-
         User friend = findByEmail(friendEmail);
-
         if (user.getConnections().contains(friend)) {
             throw new IllegalArgumentException("Cet utilisateur est déjà dans vos connexions.");
         }
 
+        // Ajout dans les deux sens
         user.getConnections().add(friend);
+        friend.getConnections().add(user);
+
         userRepository.save(user);
+        userRepository.save(friend);
+    }
+    
+    public User findByEmailWithConnections(String email) {
+        return userRepository.findByEmailWithConnections(email)
+            .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable : " + email));
     }
 }

@@ -3,6 +3,8 @@ package com.openclassrooms.Pay_My_Buddy.repository;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.openclassrooms.Pay_My_Buddy.model.User;
@@ -21,4 +23,11 @@ public interface UserRepository extends JpaRepository<User, Integer> {
      * Utilisé lors de l'inscription.
      */
     boolean existsByEmail(String email);
-}
+    
+    @Query("""
+            SELECT u FROM User u
+            LEFT JOIN FETCH u.connections
+            WHERE u.email = :email
+        """)
+        Optional<User> findByEmailWithConnections(@Param("email") String email);
+    }

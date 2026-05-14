@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Virement - Pay My Buddy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-primary mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="/home">💸 Pay My Buddy</a>
+        <form th:action="@{/logout}" method="post" class="d-inline">
+            <button type="submit" class="btn btn-outline-light btn-sm">
+                Se déconnecter
+            </button>
+        </form>
+    </div>
+</nav>
+
+<div class="container" style="max-width: 600px;">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">Effectuer un virement</h5>
+        </div>
+        <div class="card-body">
+            <div id="alert" class="d-none"></div>
+
+            <div class="mb-3">
+                <label for="receiverEmail" class="form-label">Destinataire</label>
+                <select id="receiverEmail" class="form-select"
+                        aria-label="Sélectionner un ami">
+                    <option value="">Chargement...</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="amount" class="form-label">Montant (€)</label>
+                <input type="number" id="amount" class="form-control"
+                       step="0.01" min="0.01" placeholder="0.00"
+                       required aria-label="Montant du virement"/>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <input type="text" id="description" class="form-control"
+                       placeholder="Ex: remboursement restaurant"
+                       aria-label="Description du virement"/>
+            </div>
+            <button onclick="sendTransfer()" class="btn btn-primary w-100">
+                Envoyer
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadConnections() {
+    const res = await fetch('/api/connections');
+    if (!res.ok) { window.location.href = '/login'; return; }
+    const connections = await res.json();
+    const select = document.getElementById('receiverEmail');
+    if (connections.length === 0) {
+        select.innerHTML = '<option value="">Aucun ami ajouté</option>';
+    } else {
+        select.innerHTML = connections.map(c =>
+            `<option value="${c.email}">${c.username} (${c.email})</option>`
+        ).join('');
+    }
+}
+
+async function sendTransfer() {
+    const receiverEmail = document.getElementById('receiverEmail').value;
+    const amount = document.getElementById('amount').value;
+    const description = document.getElementById('description').value;
+    const alertDiv = document.getElementById('alert');
+
+    const res = await fetch('/api/transfer', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            [getCsrfHeader()]: getCsrf()   // header dynamique : X-XSRF-TOKEN ou X-CSRF-TOKEN
+        },
+        body: JSON.stringify({ receiverEmail, amount: parseFloat(amount), description })
+    });
+
+    alertDiv.classList.remove('d-none', 'alert-success', 'alert-danger');
+    if (res.ok) {
+        alertDiv.className = 'alert alert-success';
+        alertDiv.textContent = 'Virement effectué avec succès !';
+    } else {
+        const error = await res.json();
+        alertDiv.className = 'alert alert-danger';
+        alertDiv.textContent = error.message ?? 'Une erreur est survenue.';
+    }
+}
+
+function getCsrf() {
+    return document.querySelector('meta[name="_csrf"]').content;
+}
+
+function getCsrfHeader() {
+    return document.querySelector('meta[name="_csrf_header"]').content;
+}
+
+loadConnections();
+</script>
+</body>
+</html>

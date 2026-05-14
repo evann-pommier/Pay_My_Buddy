@@ -159,18 +159,18 @@ class TransactionServiceTest {
         t2.setReceiver(alice);
         t2.setAmount(new BigDecimal("30.00"));
 
-        when(transactionRepository.findBySenderOrReceiverOrderByCreatedAtDesc(alice, alice))
+        when(transactionRepository.findAllByUserWithDetails(alice))
             .thenReturn(List.of(t1, t2));
 
         List<Transaction> result = transactionService.getTransactions(alice);
 
         assertEquals(2, result.size());
-        verify(transactionRepository).findBySenderOrReceiverOrderByCreatedAtDesc(alice, alice);
+        verify(transactionRepository).findAllByUserWithDetails(alice);
     }
 
     @Test
     void getTransactions_shouldReturnEmptyList_whenNoTransactions() {
-        when(transactionRepository.findBySenderOrReceiverOrderByCreatedAtDesc(alice, alice))
+        when(transactionRepository.findAllByUserWithDetails(alice))
             .thenReturn(List.of());
 
         List<Transaction> result = transactionService.getTransactions(alice);

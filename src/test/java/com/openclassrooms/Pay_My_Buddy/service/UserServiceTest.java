@@ -119,8 +119,12 @@ class UserServiceTest {
 
         userService.addConnection(alice, "bob@email.com");
 
+        // Vérification dans les deux sens
         assertTrue(alice.getConnections().contains(bob));
-        verify(userRepository).save(alice);
+        assertTrue(bob.getConnections().contains(alice));
+
+        // Les deux users sont sauvegardés
+        verify(userRepository, times(2)).save(any(User.class));
     }
 
     @Test

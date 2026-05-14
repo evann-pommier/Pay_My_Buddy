@@ -27,11 +27,7 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ResponseEntity<UserDTO> register(@Valid @RequestBody RegisterDTO dto) {
-        try {
             User user = userService.register(dto.username(), dto.email(), dto.password());
             return ResponseEntity.ok(Mapper.toUserDTO(user));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
     }
 }

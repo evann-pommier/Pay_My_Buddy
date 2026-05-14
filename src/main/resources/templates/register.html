@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Inscription - Pay My Buddy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="card shadow p-4" style="width: 100%; max-width: 400px;">
+        <h2 class="text-center mb-4">Créer un compte</h2>
+
+        <div th:if="${error}" class="alert alert-danger" role="alert"
+             th:text="${error}"></div>
+
+			 <form th:action="@{/api/auth/register}" method="post" id="registerForm">
+			     <div class="mb-3">
+			         <label for="username" class="form-label">Nom d'utilisateur</label>
+			         <input type="text" id="username" name="username"
+			                class="form-control" placeholder="Votre nom"
+			                required aria-label="Nom d'utilisateur"/>
+			     </div>
+			     <div class="mb-3">
+			         <label for="email" class="form-label">Email</label>
+			         <input type="email" id="email" name="email"
+			                class="form-control" placeholder="votre@email.com"
+			                required aria-label="Adresse email"/>
+			     </div>
+			     <div class="mb-3">
+			         <label for="password" class="form-label">Mot de passe</label>
+			         <input type="password" id="password" name="password"
+			                class="form-control" placeholder="••••••••"
+			                required minlength="8" aria-label="Mot de passe"/>
+			         <div class="form-text">8 caractères minimum.</div>
+			     </div>
+			     <div id="alert" class="d-none"></div>
+			     <button type="button" onclick="register()" class="btn btn-primary w-100">
+			         S'inscrire
+			     </button>
+			 </form>
+
+			 <script>
+			 async function register() {
+			     const alertDiv = document.getElementById('alert');
+			     const res = await fetch('/api/auth/register', {
+			         method: 'POST',
+			         headers: {
+			             'Content-Type': 'application/json',
+			             'X-XSRF-TOKEN': getCsrf()
+			         },
+			         body: JSON.stringify({
+			             username: document.getElementById('username').value,
+			             email: document.getElementById('email').value,
+			             password: document.getElementById('password').value
+			         })
+			     });
+
+			     alertDiv.classList.remove('d-none', 'alert-success', 'alert-danger');
+			     if (res.ok) {
+			         alertDiv.className = 'alert alert-success';
+			         alertDiv.textContent = 'Compte créé ! Redirection...';
+			         setTimeout(() => window.location.href = '/login?registered', 1500);
+			     } else {
+			         alertDiv.className = 'alert alert-danger';
+			         alertDiv.textContent = 'Cet email est déjà utilisé.';
+			     }
+			 }
+
+			 function getCsrf() {
+			     return document.cookie.split(';')
+			         .find(c => c.trim().startsWith('XSRF-TOKEN='))
+			         ?.split('=')[1] ?? '';
+			 }
+			 </script>
+
+        <p class="text-center mt-3">
+            Déjà un compte ?
+            <a th:href="@{/login}">Se connecter</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

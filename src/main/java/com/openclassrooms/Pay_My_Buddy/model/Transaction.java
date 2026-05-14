@@ -4,28 +4,28 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"sender", "receiver"})
 @Entity
 @Table(name = "transactions")
 public class Transaction {
 
+    @EqualsAndHashCode.Include
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    /**
-     * Utilisateur qui envoie l'argent.
-     * LAZY = l'objet User n'est chargé que si on y accède.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    /**
-     * Utilisateur qui reçoit l'argent.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;
@@ -36,11 +36,6 @@ public class Transaction {
     @Column(nullable = false)
     private BigDecimal amount;
 
-    /**
-     * Date et heure de la transaction.
-     * Remplie automatiquement à la création.
-     */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
-    
 }

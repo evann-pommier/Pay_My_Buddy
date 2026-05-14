@@ -71,7 +71,6 @@ public class TransactionService {
      * Récupère toutes les transactions d'un utilisateur.
      */
     public List<Transaction> getTransactions(User user) {
-        return transactionRepository
-            .findBySenderOrReceiverOrderByCreatedAtDesc(user, user);
+        return transactionRepository.findAllByUserWithDetails(user);
     }
 }
