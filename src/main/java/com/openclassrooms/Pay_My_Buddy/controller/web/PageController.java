@@ -20,4 +20,7 @@ public class PageController {
 
     @GetMapping("/add-connection")
     public String addConnectionPage() { return "add-connection"; }
+
+    @GetMapping("/profile")
+    public String profilePage() { return "profile"; }
 }

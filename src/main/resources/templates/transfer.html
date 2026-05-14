@@ -3,70 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Virement - Pay My Buddy</title>
+    <title>Transférer - Pay My Buddy</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-	<meta name="_csrf" th:content="${_csrf.token}"/>
-	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <style>
+        body { background: #f5f5f5; font-family: sans-serif; }
+        .btn-pay {
+            background: #2979FF;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .btn-pay:hover { background: #1565C0; }
+        .form-control, .form-select { font-size: 0.9rem; border-radius: 4px; }
+        table th { font-weight: 600; font-size: 0.85rem; color: #555; }
+        table td { font-size: 0.9rem; }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-dark bg-primary mb-4">
-    <div class="container">
-        <a class="navbar-brand" href="/home">💸 Pay My Buddy</a>
-        <form th:action="@{/logout}" method="post" class="d-inline">
-            <button type="submit" class="btn btn-outline-light btn-sm">
-                Se déconnecter
-            </button>
-        </form>
+<div th:replace="~{fragments/navbar :: navbar('transfer')}"></div>
+
+<div class="container mt-4" style="max-width: 700px;">
+
+    <div id="alert" class="d-none mb-3"></div>
+
+    <!-- Formulaire de virement -->
+    <div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+        <select id="receiverEmail" class="form-select" style="max-width:220px;"
+                aria-label="Sélectionner une relation">
+            <option value="">Sélectionner une relation</option>
+        </select>
+
+        <input type="text" id="description" class="form-control" style="max-width:200px;"
+               placeholder="Description" aria-label="Description du virement"/>
+
+        <div class="d-flex align-items-center border rounded" style="max-width:100px;">
+            <input type="number" id="amount" class="form-control border-0"
+                   step="0.01" min="0.01" placeholder="0€"
+                   aria-label="Montant du virement"/>
+        </div>
+
+        <button onclick="sendTransfer()" class="btn-pay">Payer</button>
     </div>
-</nav>
 
-<div class="container" style="max-width: 600px;">
-    <div class="card shadow-sm">
-        <div class="card-header">
-            <h5 class="mb-0">Effectuer un virement</h5>
-        </div>
-        <div class="card-body">
-            <div id="alert" class="d-none"></div>
-
-            <div class="mb-3">
-                <label for="receiverEmail" class="form-label">Destinataire</label>
-                <select id="receiverEmail" class="form-select"
-                        aria-label="Sélectionner un ami">
-                    <option value="">Chargement...</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="amount" class="form-label">Montant (€)</label>
-                <input type="number" id="amount" class="form-control"
-                       step="0.01" min="0.01" placeholder="0.00"
-                       required aria-label="Montant du virement"/>
-            </div>
-            <div class="mb-3">
-                <label for="description" class="form-label">Description</label>
-                <input type="text" id="description" class="form-control"
-                       placeholder="Ex: remboursement restaurant"
-                       aria-label="Description du virement"/>
-            </div>
-            <button onclick="sendTransfer()" class="btn btn-primary w-100">
-                Envoyer
-            </button>
-        </div>
+    <!-- Tableau des transactions -->
+    <div>
+        <h6 class="mb-2" style="font-weight:600;">Mes Transactions</h6>
+        <table class="table table-borderless" aria-label="Historique des transactions">
+            <thead style="border-bottom: 1px solid #ddd;">
+                <tr>
+                    <th scope="col">Relations</th>
+                    <th scope="col">Description</th>
+                    <th scope="col" class="text-end">Montant</th>
+                </tr>
+            </thead>
+            <tbody id="transactions">
+                <tr>
+                    <td colspan="3" class="text-center text-muted">Chargement...</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
 <script>
-async function loadConnections() {
-    const res = await fetch('/api/connections');
-    if (!res.ok) { window.location.href = '/login'; return; }
-    const connections = await res.json();
+let currentUserEmail = null;
+
+async function loadData() {
+    const [meRes, txRes, connRes] = await Promise.all([
+        fetch('/api/me'),
+        fetch('/api/transactions'),
+        fetch('/api/connections')
+    ]);
+
+    if (!meRes.ok) { window.location.href = '/login'; return; }
+
+    const me = await meRes.json();
+    currentUserEmail = me.email;
+
+    const connections = connRes.ok ? await connRes.json() : [];
     const select = document.getElementById('receiverEmail');
     if (connections.length === 0) {
-        select.innerHTML = '<option value="">Aucun ami ajouté</option>';
+        select.innerHTML = '<option value="">Aucune relation ajoutée</option>';
     } else {
-        select.innerHTML = connections.map(c =>
-            `<option value="${c.email}">${c.username} (${c.email})</option>`
-        ).join('');
+        select.innerHTML = '<option value="">Sélectionner une relation</option>'
+            + connections.map(c =>
+                `<option value="${c.email}">${c.username} (${c.email})</option>`
+            ).join('');
+    }
+
+    const transactions = txRes.ok ? await txRes.json() : [];
+    const tbody = document.getElementById('transactions');
+    if (transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-muted">Aucune transaction</td></tr>';
+    } else {
+        tbody.innerHTML = transactions.map(tx => {
+            const isSender = tx.senderEmail === currentUserEmail;
+            const relation = isSender ? tx.receiverEmail : tx.senderEmail;
+            const sign = isSender ? '-' : '+';
+            return `
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td>${relation}</td>
+                    <td>${tx.description ?? '-'}</td>
+                    <td class="text-end">${sign}${tx.amount}€</td>
+                </tr>
+            `;
+        }).join('');
     }
 }
 
@@ -76,21 +123,30 @@ async function sendTransfer() {
     const description = document.getElementById('description').value;
     const alertDiv = document.getElementById('alert');
 
+    if (!receiverEmail) {
+        alertDiv.className = 'alert alert-warning';
+        alertDiv.textContent = 'Veuillez sélectionner un destinataire.';
+        return;
+    }
+
     const res = await fetch('/api/transfer', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            [getCsrfHeader()]: getCsrf()   // header dynamique : X-XSRF-TOKEN ou X-CSRF-TOKEN
+            [getCsrfHeader()]: getCsrf()
         },
         body: JSON.stringify({ receiverEmail, amount: parseFloat(amount), description })
     });
 
-    alertDiv.classList.remove('d-none', 'alert-success', 'alert-danger');
+    alertDiv.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
     if (res.ok) {
         alertDiv.className = 'alert alert-success';
         alertDiv.textContent = 'Virement effectué avec succès !';
+        document.getElementById('amount').value = '';
+        document.getElementById('description').value = '';
+        loadData();
     } else {
-        const error = await res.json();
+        const error = await res.json().catch(() => ({}));
         alertDiv.className = 'alert alert-danger';
         alertDiv.textContent = error.message ?? 'Une erreur est survenue.';
     }
@@ -99,12 +155,11 @@ async function sendTransfer() {
 function getCsrf() {
     return document.querySelector('meta[name="_csrf"]').content;
 }
-
 function getCsrfHeader() {
     return document.querySelector('meta[name="_csrf_header"]').content;
 }
 
-loadConnections();
+loadData();
 </script>
 </body>
 </html>

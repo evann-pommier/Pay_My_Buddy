@@ -5,62 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Accueil - Pay My Buddy</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f5f5f5; font-family: sans-serif; }
+        table th { font-weight: 600; font-size: 0.85rem; color: #555; }
+        table td { font-size: 0.9rem; }
+        .btn-action {
+            background: #F5A623;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn-action:hover { background: #d4891a; color: #fff; }
+        .btn-action-blue {
+            background: #2979FF;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+        .btn-action-blue:hover { background: #1565C0; color: #fff; }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-dark bg-primary mb-4">
-    <div class="container">
-        <span class="navbar-brand">💸 Pay My Buddy</span>
-        <form th:action="@{/logout}" method="post" class="d-inline">
-            <button type="submit" class="btn btn-outline-light btn-sm">
-                Se déconnecter
-            </button>
-        </form>
-    </div>
-</nav>
+<div th:replace="~{fragments/navbar :: navbar('transfer')}"></div>
 
-<div class="container">
+<div class="container mt-4" style="max-width: 700px;">
 
-    <!-- Solde -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">Bonjour 👋</h5>
-                    <p class="card-text display-6" id="solde">Chargement...</p>
-                    <a href="/transfer" class="btn btn-primary me-2">Envoyer de l'argent</a>
-                    <a href="/add-connection" class="btn btn-outline-primary">Ajouter un ami</a>
-                </div>
-            </div>
+    <!-- Solde et actions -->
+    <div class="mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <p class="mb-0 text-muted small">Bonjour,</p>
+            <p class="mb-0 fw-semibold" id="username">-</p>
+            <p class="mb-0 small">Solde : <strong id="balance">-</strong> €</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/transfer" class="btn-action-blue">Envoyer de l'argent</a>
+            <a href="/add-connection" class="btn-action">Ajouter une relation</a>
         </div>
     </div>
 
-    <!-- Historique des transactions -->
-    <div class="card shadow-sm">
-        <div class="card-header">
-            <h5 class="mb-0">Historique des transactions</h5>
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-striped mb-0" aria-label="Historique des transactions">
-                <thead>
-                    <tr>
-                        <th scope="col">Date</th>
-                        <th scope="col">Description</th>
-                        <th scope="col">Montant</th>
-                    </tr>
-                </thead>
-                <tbody id="transactions">
-                    <tr>
-                        <td colspan="3" class="text-center text-muted">Chargement...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <!-- Tableau des transactions -->
+    <h6 class="mb-2" style="font-weight:600;">Mes Transactions</h6>
+    <table class="table table-borderless" aria-label="Historique des transactions">
+        <thead style="border-bottom: 1px solid #ddd;">
+            <tr>
+                <th scope="col">Relations</th>
+                <th scope="col">Description</th>
+                <th scope="col" class="text-end">Montant</th>
+            </tr>
+        </thead>
+        <tbody id="transactions">
+            <tr>
+                <td colspan="3" class="text-center text-muted">Chargement...</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 
 <script>
-// Charge le profil et les transactions via l'API REST
 async function loadData() {
     try {
         const [meRes, txRes] = await Promise.all([
@@ -68,30 +77,30 @@ async function loadData() {
             fetch('/api/transactions')
         ]);
 
-        if (!meRes.ok || !txRes.ok) {
-            window.location.href = '/login';
-            return;
-        }
+        if (!meRes.ok) { window.location.href = '/login'; return; }
 
         const me = await meRes.json();
-        const transactions = await txRes.json();
+        document.getElementById('username').textContent = me.username;
+        document.getElementById('balance').textContent = me.balance;
 
-        document.getElementById('solde').textContent =
-            `${me.username} — Solde : ${me.balance} €`;
-
+        const transactions = txRes.ok ? await txRes.json() : [];
         const tbody = document.getElementById('transactions');
+
         if (transactions.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Aucune transaction</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="text-muted">Aucune transaction</td></tr>';
         } else {
-            tbody.innerHTML = transactions.map(tx => `
-                <tr>
-                    <td>${new Date(tx.createdAt).toLocaleDateString('fr-FR')}</td>
-                    <td>${tx.description ?? '-'}</td>
-                    <td class="${tx.sender?.email === me.email ? 'text-danger' : 'text-success'}">
-                        ${tx.sender?.email === me.email ? '-' : '+'}${tx.amount} €
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = transactions.map(tx => {
+                const isSender = tx.senderEmail === me.email;
+                const relation = isSender ? tx.receiverEmail : tx.senderEmail;
+                const sign = isSender ? '-' : '+';
+                return `
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                        <td>${relation}</td>
+                        <td>${tx.description ?? '-'}</td>
+                        <td class="text-end">${sign}${tx.amount}€</td>
+                    </tr>
+                `;
+            }).join('');
         }
     } catch (e) {
         console.error('Erreur chargement données', e);
