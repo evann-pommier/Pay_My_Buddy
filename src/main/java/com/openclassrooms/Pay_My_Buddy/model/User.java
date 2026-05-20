@@ -39,6 +39,7 @@ public class User {
 
     @ToString.Exclude
     @ManyToMany(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinTable(
         name = "user_connections",
         joinColumns = @JoinColumn(name = "user_id"),

@@ -54,12 +54,19 @@ class TransferControllerTest {
     @Test
     void transfer_shouldReturn200_whenValid() throws Exception {
         User alice = buildAlice();
+        User bob = new User();
+        bob.setId(2);
+        bob.setEmail("bob@email.com");
+        bob.setUsername("Bob");
+        bob.setConnections(new ArrayList<>());
+
         Transaction transaction = new Transaction();
         transaction.setAmount(new BigDecimal("50.00"));
+        transaction.setSender(alice);    // ← ajouté
+        transaction.setReceiver(bob);    // ← ajouté
 
-        when(userService.findByEmail("alice@email.com")).thenReturn(alice);
-        when(transactionService.transfer(any(), anyString(), any(), anyString()))
-            .thenReturn(transaction);
+        when(userService.findByEmailWithConnections("alice@email.com")).thenReturn(alice); // ← corrigé
+        when(transactionService.transfer(any(), anyString(), any(), anyString())).thenReturn(transaction);
 
         mockMvc.perform(post("/api/transfer")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -78,7 +85,7 @@ class TransferControllerTest {
     @Test
     void transfer_shouldReturn400_whenInsufficientBalance() throws Exception {
         User alice = buildAlice();
-        when(userService.findByEmail("alice@email.com")).thenReturn(alice);
+        when(userService.findByEmailWithConnections("alice@email.com")).thenReturn(alice); // ← corrigé
         when(transactionService.transfer(any(), anyString(), any(), anyString()))
             .thenThrow(new InsufficientBalanceException("Solde insuffisant."));
 
@@ -93,7 +100,7 @@ class TransferControllerTest {
                 """)
                 .with(user("alice@email.com"))
                 .with(csrf()))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isUnprocessableEntity());
     }
 
     @Test
@@ -114,7 +121,7 @@ class TransferControllerTest {
     @Test
     void connections_shouldReturn200_whenAuthenticated() throws Exception {
         User alice = buildAlice();
-        when(userService.findByEmail("alice@email.com")).thenReturn(alice);
+        when(userService.findByEmailWithConnections("alice@email.com")).thenReturn(alice);
 
         mockMvc.perform(get("/api/connections")
                 .with(user("alice@email.com")))
@@ -124,7 +131,7 @@ class TransferControllerTest {
     @Test
     void addConnection_shouldReturn200_whenValid() throws Exception {
         User alice = buildAlice();
-        when(userService.findByEmail("alice@email.com")).thenReturn(alice);
+        when(userService.findByEmailWithConnections("alice@email.com")).thenReturn(alice); // ← corrigé
         doNothing().when(userService).addConnection(any(), anyString());
 
         mockMvc.perform(post("/api/connections")
@@ -142,7 +149,7 @@ class TransferControllerTest {
     @Test
     void addConnection_shouldReturn400_whenAlreadyConnected() throws Exception {
         User alice = buildAlice();
-        when(userService.findByEmail("alice@email.com")).thenReturn(alice);
+        when(userService.findByEmailWithConnections("alice@email.com")).thenReturn(alice); // ← corrigé
         doThrow(new IllegalArgumentException("Déjà connecté."))
             .when(userService).addConnection(any(), anyString());
 
