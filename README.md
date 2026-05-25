@@ -11,11 +11,13 @@ Développée avec Spring Boot 3.5, Spring Security, JPA/Hibernate et MySQL.
 erDiagram
     USERS {
         int id PK
-        varchar username
+        varchar username UK
         varchar email UK
         varchar password
         decimal balance
+        timestamp created_at
     }
+
     TRANSACTIONS {
         int id PK
         int sender_id FK
@@ -24,15 +26,17 @@ erDiagram
         decimal amount
         timestamp created_at
     }
+
     USER_CONNECTIONS {
-        int user_id FK
-        int connection_id FK
+        int user_id PK, FK
+        int connection_id PK, FK
     }
 
-    USERS ||--o{ TRANSACTIONS : "envoie (sender_id)"
-    USERS ||--o{ TRANSACTIONS : "reçoit (receiver_id)"
-    USERS ||--o{ USER_CONNECTIONS : "possède (user_id)"
-    USERS ||--o{ USER_CONNECTIONS : "est connecté via (connection_id)"
+    USERS ||--o{ TRANSACTIONS : "envoie"
+    USERS ||--o{ TRANSACTIONS : "reçoit"
+
+    USERS ||--o{ USER_CONNECTIONS : "possède"
+    USERS ||--o{ USER_CONNECTIONS : "connexion"
 ```
 
 ---

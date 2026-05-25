@@ -24,9 +24,11 @@ CREATE TABLE users (
     email    VARCHAR(255)    NOT NULL,
     password VARCHAR(255)    NOT NULL,
     balance  DECIMAL(10, 2)  NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT pk_users            PRIMARY KEY (id),
     CONSTRAINT uq_users_email      UNIQUE (email),
+    CONSTRAINT uq_users_username   UNIQUE (username),
     CONSTRAINT ck_balance_positive CHECK (balance >= 0)
 );
 
@@ -40,7 +42,7 @@ CREATE TABLE transactions (
     description VARCHAR(255),
     amount      DECIMAL(10, 2)  NOT NULL,
     created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
+ 
     CONSTRAINT pk_transactions          PRIMARY KEY (id),
     CONSTRAINT fk_transactions_sender   FOREIGN KEY (sender_id)
         REFERENCES users (id)
@@ -57,7 +59,7 @@ CREATE TABLE transactions (
 CREATE TABLE user_connections (
     user_id       INT NOT NULL,
     connection_id INT NOT NULL,
-
+ 
     CONSTRAINT pk_user_connections       PRIMARY KEY (user_id, connection_id),
     CONSTRAINT fk_connections_user       FOREIGN KEY (user_id)
         REFERENCES users (id)
@@ -70,6 +72,8 @@ CREATE TABLE user_connections (
 -- -------------------------------------------------------------
 --  Index pour accélérer les requêtes fréquentes
 -- -------------------------------------------------------------
+CREATE INDEX idx_users_email           ON users (email);
+CREATE INDEX idx_users_username        ON users (username);
 CREATE INDEX idx_transactions_sender   ON transactions (sender_id);
 CREATE INDEX idx_transactions_receiver ON transactions (receiver_id);
 CREATE INDEX idx_connections_user      ON user_connections (user_id);
