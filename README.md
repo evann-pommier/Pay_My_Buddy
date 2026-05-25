@@ -201,7 +201,6 @@ Tous les comptes de test ont le mot de passe : **`password123`**
 - Les identifiants de base de données sont injectés via des **variables d'environnement**
 - La protection **CSRF** est activée sur tous les formulaires
 - Les routes sont sécurisées via **Spring Security**
-- Le fichier `application.properties` est exclu du dépôt Git (`.gitignore`)
 
 ---
 
