@@ -30,6 +30,8 @@
             text-decoration: none;
         }
         .btn-action-blue:hover { background: #1565C0; color: #fff; }
+        .amount-negative { color: #e53935; }
+        .amount-positive { color: #2e7d32; }
     </style>
 </head>
 <body>
@@ -42,8 +44,13 @@
     <div class="mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div>
             <p class="mb-0 text-muted small">Bonjour,</p>
-            <p class="mb-0 fw-semibold" id="username">-</p>
-            <p class="mb-0 small">Solde : <strong id="balance">-</strong> €</p>
+            <p class="mb-0 fw-semibold" th:text="${user.username}">-</p>
+            <p class="mb-0 small">
+                Solde :
+                <strong>
+                    <span th:text="${#numbers.formatDecimal(user.balance, 1, 2)}">0.00</span> €
+                </strong>
+            </p>
         </div>
         <div class="d-flex gap-2">
             <a href="/transfer" class="btn-action-blue">Envoyer de l'argent</a>
@@ -61,53 +68,33 @@
                 <th scope="col" class="text-end">Montant</th>
             </tr>
         </thead>
-        <tbody id="transactions">
-            <tr>
-                <td colspan="3" class="text-center text-muted">Chargement...</td>
+        <tbody>
+            <!-- Cas : aucune transaction -->
+            <tr th:if="${#lists.isEmpty(transactions)}">
+                <td colspan="3" class="text-center text-muted">Aucune transaction</td>
+            </tr>
+            <!-- Itération Thymeleaf sur les transactions -->
+            <tr th:each="tx : ${transactions}"
+                style="border-bottom: 1px solid #f0f0f0;">
+                <td>
+                    <!-- Affiche l'autre partie de la transaction -->
+                    <span th:text="${tx.senderEmail == user.email ? tx.receiverEmail : tx.senderEmail}">-</span>
+                </td>
+                <td th:text="${tx.description != null ? tx.description : '-'}">-</td>
+                <td class="text-end">
+                    <span th:if="${tx.senderEmail == user.email}"
+                          class="amount-negative"
+                          th:text="'-' + ${#numbers.formatDecimal(tx.amount, 1, 2)} + ' €'">
+                    </span>
+                    <span th:unless="${tx.senderEmail == user.email}"
+                          class="amount-positive"
+                          th:text="'+' + ${#numbers.formatDecimal(tx.amount, 1, 2)} + ' €'">
+                    </span>
+                </td>
             </tr>
         </tbody>
     </table>
 </div>
 
-<script>
-async function loadData() {
-    try {
-        const [meRes, txRes] = await Promise.all([
-            fetch('/api/me'),
-            fetch('/api/transactions')
-        ]);
-
-        if (!meRes.ok) { window.location.href = '/login'; return; }
-
-        const me = await meRes.json();
-        document.getElementById('username').textContent = me.username;
-        document.getElementById('balance').textContent = me.balance;
-
-        const transactions = txRes.ok ? await txRes.json() : [];
-        const tbody = document.getElementById('transactions');
-
-        if (transactions.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-muted">Aucune transaction</td></tr>';
-        } else {
-            tbody.innerHTML = transactions.map(tx => {
-                const isSender = tx.senderEmail === me.email;
-                const relation = isSender ? tx.receiverEmail : tx.senderEmail;
-                const sign = isSender ? '-' : '+';
-                return `
-                    <tr style="border-bottom: 1px solid #f0f0f0;">
-                        <td>${relation}</td>
-                        <td>${tx.description ?? '-'}</td>
-                        <td class="text-end">${sign}${tx.amount}€</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-    } catch (e) {
-        console.error('Erreur chargement données', e);
-    }
-}
-
-loadData();
-</script>
 </body>
 </html>

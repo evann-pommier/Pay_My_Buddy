@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Inscription - Pay My Buddy</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <meta name="_csrf" th:content="${_csrf.token}"/>
-    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <style>
         body { background: #f5f5f5; }
         .logo-btn {
@@ -41,26 +39,67 @@
             <span class="logo-btn">Pay My Buddy</span>
         </div>
 
-        <div id="alert" class="d-none mb-3"></div>
+        <!-- Erreur métier (email/username déjà pris) -->
+        <div th:if="${errorMessage}"
+             class="alert alert-danger py-2 small"
+             role="alert"
+             th:text="${errorMessage}">
+        </div>
 
-        <div class="mb-3">
-            <input type="text" id="username" class="form-control"
-                   placeholder="Username" required
-                   aria-label="Nom d'utilisateur"/>
-        </div>
-        <div class="mb-3">
-            <input type="email" id="email" class="form-control"
-                   placeholder="Mail" required
-                   aria-label="Adresse email"/>
-        </div>
-        <div class="mb-3">
-            <input type="password" id="password" class="form-control"
-                   placeholder="Mot de passe" required minlength="8"
-                   aria-label="Mot de passe"/>
-        </div>
-        <button type="button" onclick="register()" class="btn-register">
-            S'inscrire
-        </button>
+        <form th:action="@{/register}" th:object="${registerDTO}" method="post"
+              novalidate>
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+			
+			<div th:if="${#fields.hasErrors('*')}"
+			             class="alert alert-danger py-2 small"
+			             role="alert">
+			            <ul class="mb-0 ps-3">
+			                <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+			            </ul>
+			        </div>
+
+            <div class="mb-3">
+                <label for="username" class="visually-hidden">Nom d'utilisateur</label>
+                <input type="text"
+                       id="username"
+                       th:field="*{username}"
+                       class="form-control"
+                       th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'"
+                       placeholder="Username"
+                       required
+                       aria-label="Nom d'utilisateur"/>
+                <div class="invalid-feedback" th:errors="*{username}"></div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="visually-hidden">Adresse email</label>
+                <input type="email"
+                       id="email"
+                       th:field="*{email}"
+                       class="form-control"
+                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"
+                       placeholder="Mail"
+                       required
+                       aria-label="Adresse email"/>
+                <div class="invalid-feedback" th:errors="*{email}"></div>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="visually-hidden">Mot de passe</label>
+                <input type="password"
+                       id="password"
+                       th:field="*{password}"
+                       class="form-control"
+                       th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'"
+                       placeholder="Mot de passe"
+                       required
+                       minlength="8"
+                       aria-label="Mot de passe"/>
+                <div class="invalid-feedback" th:errors="*{password}"></div>
+            </div>
+
+            <button type="submit" class="btn-register">S'inscrire</button>
+        </form>
 
         <p class="text-center mt-3 small mb-0">
             Déjà un compte ?
@@ -68,41 +107,5 @@
         </p>
     </div>
 </div>
-
-<script>
-async function register() {
-    const alertDiv = document.getElementById('alert');
-    const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            [getCsrfHeader()]: getCsrf()
-        },
-        body: JSON.stringify({
-            username: document.getElementById('username').value,
-            email: document.getElementById('email').value,
-            password: document.getElementById('password').value
-        })
-    });
-
-    alertDiv.classList.remove('d-none', 'alert-success', 'alert-danger');
-    if (res.ok) {
-        alertDiv.className = 'alert alert-success py-2 small';
-        alertDiv.textContent = 'Compte créé ! Redirection...';
-        setTimeout(() => window.location.href = '/login?registered', 1500);
-    } else {
-        const error = await res.json().catch(() => ({}));
-        alertDiv.className = 'alert alert-danger py-2 small';
-        alertDiv.textContent = error.message ?? 'Cet email est déjà utilisé.';
-    }
-}
-
-function getCsrf() {
-    return document.querySelector('meta[name="_csrf"]').content;
-}
-function getCsrfHeader() {
-    return document.querySelector('meta[name="_csrf_header"]').content;
-}
-</script>
 </body>
 </html>

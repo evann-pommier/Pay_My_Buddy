@@ -12,6 +12,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -54,6 +55,9 @@ class TransactionServiceTest {
         bob.setPassword("hashedPassword");
         bob.setBalance(new BigDecimal("250.00"));
         bob.setConnections(new ArrayList<>());
+
+        // Alice et Bob sont contacts par défaut pour la majorité des tests
+        alice.getConnections().add(bob);
     }
 
     // -------------------------------------------------------
@@ -79,8 +83,17 @@ class TransactionServiceTest {
         assertEquals(alice, result.getSender());
         assertEquals(bob, result.getReceiver());
 
-        verify(userRepository, times(2)).save(any(User.class));
-        verify(transactionRepository).save(any(Transaction.class));
+        verify(userRepository).save(alice);
+        verify(userRepository).save(bob);
+
+        ArgumentCaptor<Transaction> transactionCaptor = ArgumentCaptor.forClass(Transaction.class);
+        verify(transactionRepository).save(transactionCaptor.capture());
+        Transaction savedTransaction = transactionCaptor.getValue();
+
+        assertEquals(alice, savedTransaction.getSender());
+        assertEquals(bob, savedTransaction.getReceiver());
+        assertEquals(new BigDecimal("100.00"), savedTransaction.getAmount());
+        assertEquals("Test virement", savedTransaction.getDescription());
     }
 
     @Test
@@ -92,7 +105,8 @@ class TransactionServiceTest {
         );
 
         assertEquals("Vous ne pouvez pas vous envoyer de l'argent.", exception.getMessage());
-        verify(transactionRepository, never()).save(any());
+        verify(userRepository, never()).save(any(User.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
     @Test
@@ -104,7 +118,8 @@ class TransactionServiceTest {
         );
 
         assertEquals("Le montant doit être supérieur à 0.", exception.getMessage());
-        verify(transactionRepository, never()).save(any());
+        verify(userRepository, never()).save(any(User.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
     @Test
@@ -115,7 +130,8 @@ class TransactionServiceTest {
                 alice, "bob@email.com", new BigDecimal("-50.00"), "Test")
         );
 
-        verify(transactionRepository, never()).save(any());
+        verify(userRepository, never()).save(any(User.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
     @Test
@@ -127,20 +143,51 @@ class TransactionServiceTest {
         );
 
         assertEquals("Solde insuffisant pour effectuer ce virement.", exception.getMessage());
-        verify(transactionRepository, never()).save(any());
+        verify(userRepository, never()).save(any(User.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
     @Test
     void transfer_shouldThrowException_whenReceiverNotFound() {
-        when(userRepository.findByEmail("inconnu@email.com")).thenReturn(Optional.empty());
+        // charlie n'est pas contact d'alice ici, donc on teste d'abord la règle contact
+        // Pour tester "receiver not found", on ajoute charlie comme contact mais absent en BDD
+        User charlie = new User();
+        charlie.setId(3);
+        charlie.setEmail("charlie@email.com");
+        alice.getConnections().add(charlie);
+
+        when(userRepository.findByEmail("charlie@email.com")).thenReturn(Optional.empty());
 
         assertThrows(
             IllegalArgumentException.class,
             () -> transactionService.transfer(
-                alice, "inconnu@email.com", new BigDecimal("100.00"), "Test")
+                alice, "charlie@email.com", new BigDecimal("100.00"), "Test")
         );
 
-        verify(transactionRepository, never()).save(any());
+        verify(userRepository, never()).save(any(User.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+    }
+
+    // AJOUTÉ : test de la nouvelle règle "destinataire doit être un contact"
+    @Test
+    void transfer_shouldThrowException_whenReceiverIsNotAContact() {
+        User stranger = new User();
+        stranger.setId(99);
+        stranger.setEmail("stranger@email.com");
+        // stranger n'est PAS dans les connections d'alice
+
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> transactionService.transfer(
+                alice, "stranger@email.com", new BigDecimal("50.00"), "Test")
+        );
+
+        assertEquals(
+            "Vous ne pouvez envoyer de l'argent qu'à vos contacts.",
+            exception.getMessage()
+        );
+        verify(userRepository, never()).save(any(User.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
     // -------------------------------------------------------
@@ -176,5 +223,6 @@ class TransactionServiceTest {
         List<Transaction> result = transactionService.getTransactions(alice);
 
         assertTrue(result.isEmpty());
+        verify(transactionRepository).findAllByUserWithDetails(alice);
     }
 }

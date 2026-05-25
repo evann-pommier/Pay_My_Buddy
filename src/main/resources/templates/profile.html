@@ -42,40 +42,100 @@
 <div class="container mt-5 d-flex justify-content-center">
     <div style="width: 100%; max-width: 500px; margin-top: 60px;">
 
-        <div id="alert" class="d-none mb-3"></div>
-        <div id="content" style="display:none;">
+        <!-- Messages flash -->
+        <div th:if="${successMessage}"
+             class="alert alert-success mb-3"
+             role="alert"
+             th:text="${successMessage}">
+        </div>
+        <div th:if="${errorMessage}"
+             class="alert alert-danger mb-3"
+             role="alert"
+             th:text="${errorMessage}">
+        </div>
+
+        <!-- Affichage du profil -->
+        <div id="view-mode">
             <div class="profile-row">
                 <span class="profile-label">Username</span>
-                <span class="profile-value" id="username">-</span>
+                <span class="profile-value" th:text="${user.username}">-</span>
             </div>
             <div class="profile-row">
                 <span class="profile-label">Mail</span>
-                <span class="profile-value" id="email">-</span>
+                <span class="profile-value" th:text="${user.email}">-</span>
+            </div>
+            <div class="profile-row">
+                <span class="profile-label">Solde</span>
+                <span class="profile-value">
+                    <span th:text="${#numbers.formatDecimal(user.balance, 1, 2)}">0.00</span> €
+                </span>
             </div>
             <div class="profile-row">
                 <span class="profile-label">Mot de passe</span>
                 <span class="profile-value">••••••••</span>
             </div>
             <div class="mt-4">
-                <button class="btn-modify" onclick="alert('Fonctionnalité à venir.')">
+                <button class="btn-modify"
+                        onclick="document.getElementById('view-mode').style.display='none';
+                                 document.getElementById('edit-mode').style.display='block';"
+                        aria-label="Modifier le profil">
                     Modifier
                 </button>
             </div>
         </div>
+
+        <!-- Formulaire de modification du profil -->
+        <div id="edit-mode" style="display:none;">
+            <form th:action="@{/profile}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <div class="profile-row">
+                    <label for="username" class="profile-label">Username</label>
+                    <input type="text"
+                           id="username"
+                           name="username"
+                           class="form-control"
+                           th:value="${user.username}"
+                           aria-label="Nom d'utilisateur"
+                           required/>
+                </div>
+
+                <div class="profile-row">
+                    <label for="email" class="profile-label">Mail</label>
+                    <input type="email"
+                           id="email"
+                           name="email"
+                           class="form-control"
+                           th:value="${user.email}"
+                           aria-label="Adresse email"
+                           required/>
+                </div>
+
+                <div class="profile-row">
+                    <label for="newPassword" class="profile-label">Nouveau mot de passe</label>
+                    <input type="password"
+                           id="newPassword"
+                           name="newPassword"
+                           class="form-control"
+                           placeholder="Laisser vide pour ne pas changer"
+                           minlength="8"
+                           aria-label="Nouveau mot de passe"/>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn-modify">Enregistrer</button>
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            onclick="document.getElementById('view-mode').style.display='block';
+                                     document.getElementById('edit-mode').style.display='none';">
+                        Annuler
+                    </button>
+                </div>
+            </form>
+        </div>
+
     </div>
 </div>
 
-<script>
-async function loadProfile() {
-    const res = await fetch('/api/me');
-    if (!res.ok) { window.location.href = '/login'; return; }
-    const me = await res.json();
-    document.getElementById('username').textContent = me.username;
-    document.getElementById('email').textContent = me.email;
-    document.getElementById('content').style.display = 'block';
-}
-
-loadProfile();
-</script>
 </body>
 </html>

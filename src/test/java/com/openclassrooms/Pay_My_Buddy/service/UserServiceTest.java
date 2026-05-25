@@ -12,6 +12,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -59,15 +60,24 @@ class UserServiceTest {
     // -------------------------------------------------------
 
     @Test
-    void register_shouldCreateUser_whenEmailIsNew() {
+    void register_shouldCreateUser_whenEmailAndUsernameAreNew() {
         when(userRepository.existsByEmail("alice@email.com")).thenReturn(false);
+        when(userRepository.existsByUsername("Alice Martin")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("hashedPassword");
         when(userRepository.save(any(User.class))).thenReturn(alice);
 
         User result = userService.register("Alice Martin", "alice@email.com", "password123");
 
         assertNotNull(result);
-        verify(userRepository).save(any(User.class));
+        assertSame(alice, result);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+
+        assertEquals("Alice Martin", savedUser.getUsername());
+        assertEquals("alice@email.com", savedUser.getEmail());
+        assertEquals("hashedPassword", savedUser.getPassword());
         verify(passwordEncoder).encode("password123");
     }
 
@@ -81,6 +91,20 @@ class UserServiceTest {
         );
 
         assertEquals("Cet email est déjà utilisé.", exception.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void register_shouldThrowException_whenUsernameAlreadyExists() {
+        when(userRepository.existsByEmail("alice2@email.com")).thenReturn(false);
+        when(userRepository.existsByUsername("Alice Martin")).thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> userService.register("Alice Martin", "alice2@email.com", "password123")
+        );
+
+        assertEquals("Ce nom d'utilisateur est déjà pris.", exception.getMessage());
         verify(userRepository, never()).save(any());
     }
 
@@ -119,12 +143,10 @@ class UserServiceTest {
 
         userService.addConnection(alice, "bob@email.com");
 
-        // Vérification dans les deux sens
         assertTrue(alice.getConnections().contains(bob));
         assertTrue(bob.getConnections().contains(alice));
-
-        // Les deux users sont sauvegardés
-        verify(userRepository, times(2)).save(any(User.class));
+        verify(userRepository).save(alice);
+        verify(userRepository).save(bob);
     }
 
     @Test
@@ -135,6 +157,8 @@ class UserServiceTest {
         );
 
         assertEquals("Vous ne pouvez pas vous ajouter vous-même.", exception.getMessage());
+        verify(userRepository, never()).findByEmail(anyString());
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
@@ -148,5 +172,94 @@ class UserServiceTest {
         );
 
         assertEquals("Cet utilisateur est déjà dans vos connexions.", exception.getMessage());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    // -------------------------------------------------------
+    //  Tests updateProfile() — NOUVEAUX
+    // -------------------------------------------------------
+
+    @Test
+    void updateProfile_shouldUpdateUsernameAndEmail_whenValid() {
+        when(userRepository.findByEmail("alice@email.com")).thenReturn(Optional.of(alice));
+        when(userRepository.existsByEmail("alice.new@email.com")).thenReturn(false);
+        when(userRepository.existsByUsername("Alice New")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenReturn(alice);
+
+        User result = userService.updateProfile("alice@email.com", "Alice New", "alice.new@email.com", null);
+
+        assertSame(alice, result);
+        assertEquals("Alice New", alice.getUsername());
+        assertEquals("alice.new@email.com", alice.getEmail());
+        verify(userRepository).save(alice);
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
+    void updateProfile_shouldUpdatePassword_whenNewPasswordProvided() {
+        when(userRepository.findByEmail("alice@email.com")).thenReturn(Optional.of(alice));
+        when(passwordEncoder.encode("newpassword123")).thenReturn("newHashedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(alice);
+
+        User result = userService.updateProfile("alice@email.com", "Alice Martin", "alice@email.com", "newpassword123");
+
+        assertSame(alice, result);
+        assertEquals("newHashedPassword", alice.getPassword());
+        verify(passwordEncoder).encode("newpassword123");
+        verify(userRepository).save(alice);
+    }
+
+    @Test
+    void updateProfile_shouldNotUpdatePassword_whenNewPasswordIsBlank() {
+        when(userRepository.findByEmail("alice@email.com")).thenReturn(Optional.of(alice));
+        when(userRepository.save(any(User.class))).thenReturn(alice);
+
+        User result = userService.updateProfile("alice@email.com", "Alice Martin", "alice@email.com", "  ");
+
+        assertSame(alice, result);
+        assertEquals("hashedPassword", alice.getPassword());
+        verify(userRepository).save(alice);
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
+    void updateProfile_shouldThrowException_whenNewEmailAlreadyTaken() {
+        when(userRepository.findByEmail("alice@email.com")).thenReturn(Optional.of(alice));
+        when(userRepository.existsByEmail("taken@email.com")).thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> userService.updateProfile("alice@email.com", "Alice", "taken@email.com", null)
+        );
+
+        assertEquals("Cet email est déjà utilisé.", exception.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateProfile_shouldThrowException_whenNewUsernameAlreadyTaken() {
+        when(userRepository.findByEmail("alice@email.com")).thenReturn(Optional.of(alice));
+        when(userRepository.existsByUsername("Bob Dupont")).thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> userService.updateProfile("alice@email.com", "Bob Dupont", "alice@email.com", null)
+        );
+
+        assertEquals("Ce nom d'utilisateur est déjà pris.", exception.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateProfile_shouldThrowException_whenNewPasswordTooShort() {
+        when(userRepository.findByEmail("alice@email.com")).thenReturn(Optional.of(alice));
+
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> userService.updateProfile("alice@email.com", "Alice Martin", "alice@email.com", "court")
+        );
+
+        assertEquals("Le mot de passe doit contenir au moins 8 caractères.", exception.getMessage());
+        verify(userRepository, never()).save(any());
     }
 }
