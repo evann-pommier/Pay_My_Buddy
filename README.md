@@ -106,26 +106,21 @@ L'application sera accessible sur [http://localhost:8080](http://localhost:8080)
 src/
 ├── main/
 │   ├── java/com/openclassrooms/Pay_My_Buddy/
-│   │   ├── config/
+│   │   ├── security/
 │   │   │   └── SecurityConfig.java
 │   │   ├── controller/
-│   │   │   ├── web/
-│   │   │   │   └── PageController.java
 │   │   │   ├── AuthController.java
 │   │   │   ├── HomeController.java
 │   │   │   └── TransferController.java
 │   │   ├── dto/
-│   │   │   ├── AddConnectionDTO.java
 │   │   │   ├── RegisterDTO.java
-│   │   │   ├── TransactionResponseDTO.java
-│   │   │   ├── TransferDTO.java
-│   │   │   └── UserResponseDTO.java
+│   │   │   ├── TransactionDTO.java
+│   │   │   └── UserDTO.java
 │   │   ├── exception/
 │   │   │   ├── GlobalExceptionHandler.java
-│   │   │   ├── ErrorResponse.java
 │   │   │   └── InsufficientBalanceException.java
 │   │   ├── mapper/
-│   │   │   └── DtoMapper.java
+│   │   │   └── Mapper.java
 │   │   ├── model/
 │   │   │   ├── Transaction.java
 │   │   │   └── User.java
@@ -142,6 +137,7 @@ src/
 │       │   ├── fragments/
 │       │   │   └── navbar.html
 │       │   ├── add-connection.html
+│       │   ├── error.html
 │       │   ├── home.html
 │       │   ├── login.html
 │       │   ├── profile.html
@@ -155,11 +151,13 @@ src/
         ├── controller/
         │   ├── AuthControllerTest.java
         │   ├── HomeControllerTest.java
-        │   ├── PageControllerTest.java
         │   └── TransferControllerTest.java
-        └── service/
-            ├── TransactionServiceTest.java
-            └── UserServiceTest.java
+        ├── service/
+        │   ├── TransactionServiceTest.java
+        │   └── UserServiceTest.java
+        ├── integration/
+        │   └── IntegrationTest.java
+        └───PayMyBuddyApplicationTests.java
 ```
 
 ---
