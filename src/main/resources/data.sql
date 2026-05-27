@@ -12,7 +12,7 @@
 -- -------------------------------------------------------------
 --  Utilisateurs
 -- -------------------------------------------------------------
-INSERT INTO users (
+INSERT IGNORE INTO users (
     username,
     email,
     password,
@@ -28,7 +28,7 @@ INSERT INTO users (
 --  Connexions utilisateurs
 --  (relations symétriques)
 -- -------------------------------------------------------------
-INSERT INTO user_connections (
+INSERT IGNORE INTO user_connections (
     user_id,
     connection_id
 ) VALUES
@@ -39,7 +39,7 @@ INSERT INTO user_connections (
 -- -------------------------------------------------------------
 --  Transactions
 -- -------------------------------------------------------------
-INSERT INTO transactions (
+INSERT IGNORE INTO transactions (
     sender_id,
     receiver_id,
     description,
