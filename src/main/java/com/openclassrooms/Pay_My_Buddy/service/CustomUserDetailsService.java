@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import com.openclassrooms.Pay_My_Buddy.model.User;
 import com.openclassrooms.Pay_My_Buddy.repository.UserRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Implémentation de {@link UserDetailsService} pour l'intégration avec Spring Security.
  * <p>
@@ -15,6 +17,7 @@ import com.openclassrooms.Pay_My_Buddy.repository.UserRepository;
  * utilisée comme identifiant de connexion.
  * </p>
  */
+@Slf4j
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
@@ -43,8 +46,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new UsernameNotFoundException(
-                "Utilisateur introuvable : " + email));
+            .orElseThrow(() -> {
+                log.warn("Tentative de connexion avec un email inconnu : {}", email);
+                return new UsernameNotFoundException("Utilisateur introuvable : " + email);
+            });
+
+        log.info("Connexion de l'utilisateur : {}", email);
 
         return org.springframework.security.core.userdetails.User
             .withUsername(user.getEmail())

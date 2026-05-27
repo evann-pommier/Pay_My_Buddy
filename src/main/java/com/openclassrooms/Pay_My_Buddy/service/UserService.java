@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.openclassrooms.Pay_My_Buddy.model.User;
 import com.openclassrooms.Pay_My_Buddy.repository.UserRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Service métier gérant les opérations sur les utilisateurs.
  * <p>
@@ -14,6 +16,7 @@ import com.openclassrooms.Pay_My_Buddy.repository.UserRepository;
  * et la gestion des connexions entre utilisateurs.
  * </p>
  */
+@Slf4j
 @Service
 public class UserService {
 
@@ -58,7 +61,9 @@ public class UserService {
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        log.info("Nouvel utilisateur inscrit : {}", email);
+        return saved;
     }
 
     /**
@@ -98,7 +103,9 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(newPassword));
         }
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        log.info("Profil mis à jour pour : {}", currentEmail);
+        return saved;
     }
 
     /**
@@ -151,5 +158,6 @@ public class UserService {
 
         userRepository.save(user);
         userRepository.save(friend);
+        log.info("Connexion ajoutée entre {} et {}", user.getEmail(), friendEmail);
     }
 }

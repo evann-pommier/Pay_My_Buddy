@@ -12,6 +12,8 @@ import com.openclassrooms.Pay_My_Buddy.model.User;
 import com.openclassrooms.Pay_My_Buddy.repository.TransactionRepository;
 import com.openclassrooms.Pay_My_Buddy.repository.UserRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Service métier gérant les opérations sur les transactions financières.
  * <p>
@@ -19,6 +21,7 @@ import com.openclassrooms.Pay_My_Buddy.repository.UserRepository;
  * aux repositories.
  * </p>
  */
+@Slf4j
 @Service
 public class TransactionService {
 
@@ -56,8 +59,8 @@ public class TransactionService {
      * @param amount        le montant à transférer, strictement positif
      * @param description   la description du virement (peut être {@code null})
      * @return la transaction persistée
-     * @throws IllegalArgumentException      si une règle métier est violée
-     * @throws InsufficientBalanceException  si le solde de l'expéditeur est insuffisant
+     * @throws IllegalArgumentException     si une règle métier est violée
+     * @throws InsufficientBalanceException si le solde de l'expéditeur est insuffisant
      */
     @Transactional
     public Transaction transfer(User sender, String receiverEmail, BigDecimal amount, String description) {
@@ -94,7 +97,9 @@ public class TransactionService {
         transaction.setAmount(amount);
         transaction.setDescription(description);
 
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+        log.info("Virement effectué de {} vers {} : {} €", sender.getEmail(), receiverEmail, amount);
+        return saved;
     }
 
     /**

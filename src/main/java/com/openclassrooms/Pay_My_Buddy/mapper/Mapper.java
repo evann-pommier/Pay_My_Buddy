@@ -14,7 +14,6 @@ import com.openclassrooms.Pay_My_Buddy.model.User;
 public class Mapper {
 
     private Mapper() {}
-
     /**
      * Convertit une entité {@link User} en {@link UserDTO}.
      *
@@ -22,14 +21,8 @@ public class Mapper {
      * @return le DTO correspondant
      */
     public static UserDTO toUserDTO(User user) {
-        return new UserDTO(
-            user.getId(),
-            user.getUsername(),
-            user.getEmail(),
-            user.getBalance()
-        );
+        return new UserDTO(user.getId(),user.getUsername(),user.getEmail(),user.getBalance());
     }
-
     /**
      * Convertit une entité {@link Transaction} en {@link TransactionDTO}.
      *

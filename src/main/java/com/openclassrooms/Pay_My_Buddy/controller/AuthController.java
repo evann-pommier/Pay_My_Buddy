@@ -3,6 +3,7 @@ package com.openclassrooms.Pay_My_Buddy.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
@@ -35,6 +36,7 @@ public class AuthController {
 
     /* ------------------------------------------------------------------ */
     /*  Register                                                            */
+    /* @param model     le modèle Thymeleaf dans lequel injecter les données*/
     /* ------------------------------------------------------------------ */
 
     @GetMapping("/register")
@@ -44,9 +46,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public String register(@Valid RegisterDTO registerDTO,
-                           org.springframework.validation.BindingResult result,
-                           Model model) {
+    public String register(@Valid RegisterDTO registerDTO,BindingResult result,Model model) {
         if (result.hasErrors()) {
             return "register";
         }

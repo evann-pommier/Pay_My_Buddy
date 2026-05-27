@@ -81,9 +81,9 @@ public class TransferController {
     /**
      * Traite la soumission du formulaire de virement.
      * <p>
-     * En cas de succès, un message de confirmation est transmis via flash attribute.
+     * En cas de succès, un message de confirmation est transmis.
      * En cas d'erreur (solde insuffisant, destinataire non contact, etc.),
-     * le message d'erreur est transmis via flash attribute.
+     * le message d'erreur est transmis via.
      * </p>
      *
      * @param principal          l'utilisateur authentifié fourni par Spring Security
